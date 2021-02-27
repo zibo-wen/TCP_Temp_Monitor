@@ -4,12 +4,12 @@
 
 Widget::Widget(QWidget *parent)
     : QWidget(parent){    
+
+    // Window layout settings
     int windowWidth = 650;
     int windowHeight = 555;
-
     this->setFixedSize(windowWidth, windowHeight);
-
-    startTimer(1000);
+    this->setWindowTitle("Temperature Monitor");
 
     title = new QLabel(this);
     title->setGeometry(0, 10, windowWidth, 50);
@@ -26,6 +26,8 @@ Widget::Widget(QWidget *parent)
     f.setPointSize(10);
     timeLabel->setFont(f);
     timeLabel->setAlignment(Qt::AlignHCenter);
+
+    startTimer(1000);    // Set the timer to update the time every second
 
     currTemp  = new QLabel(this);
     currTemp->setGeometry(0,55,windowWidth/2,30);
@@ -58,13 +60,14 @@ Widget::Widget(QWidget *parent)
 Widget::~Widget(){
 }
 
-
+// Set up server to receive data from sensors
 bool Widget::setServer(){
     server = new QTcpServer();
     QHostAddress serverAddress("127.0.0.1");
     return server->listen(serverAddress, 8888);
 }
 
+// Handle the data when the sensor connects in
 void Widget::newConnectionDetect(){
     qDebug() << "New connection detected";
     timer.start();
@@ -87,6 +90,7 @@ void Widget::newConnectionDetect(){
         if (dotSeries->count() == 0){
             timer.restart();
         } else {
+            // Shift the old points by seconds elasped
             float offset = timer.elapsed()/1000.0;
             for(int i = dotSeries->count()-1;i>=0; i--){
                 dotSeries->replace(i, dotSeries->at(i).x()-offset, dotSeries->at(i).y());
@@ -115,7 +119,7 @@ void Widget::newConnectionDetect(){
     });
 }
 
-
+// Set up scatter plot to visualize temperature data
 void Widget::setCharts(){
     qDebug() << "Creating Charts";
 
@@ -126,17 +130,20 @@ void Widget::setCharts(){
     //Add axes with formats
     QValueAxis *axisX = new QValueAxis;
     QValueAxis *axisY = new QValueAxis;
+
     axisX->setRange(-60, 10);
     axisX->setLabelFormat("%.2f");
     axisX->setGridLineVisible(true);
     axisX->setTickCount(8);
     axisX->setMinorTickCount(1);
     axisX->setTitleText("Time (s)");
+
     axisY->setRange(34, 43);
     axisY->setLabelFormat("%.2f");
     axisY->setGridLineVisible(true);
     axisY->setTickCount(10);
     axisY->setTitleText("Body Temperature (°C)");
+
     mainChart->addAxis(axisX, Qt::AlignBottom);
     mainChart->addAxis(axisY, Qt::AlignLeft);
     mainChart->legend()->hide();
@@ -156,7 +163,7 @@ void Widget::setCharts(){
     dotSeries->attachAxis(axisY);
 }
 
-
+// Update the time displayed every second
 void Widget::timerEvent(QTimerEvent * event){
     QLocale locale(QLocale("en_US"));
     timeLabel->setText(locale.toString(QDateTime::currentDateTime(), "ddd, MMMM d, yyyy, hh:mm:ss"));
